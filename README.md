@@ -28,12 +28,15 @@ This is meant to make mitigation mechanisms discussable in concrete terms — no
 
 ---
 
-## Ethical use note
+## Use constraints
 
 This is a toy governance model meant for safety discussion and capability de-escalation.
 Do not use it to build surveillance, coercion, weaponization, or systems that remove user autonomy.
 If you adapt this for real tool execution, you assume full responsibility for safety, auditing, and legal compliance.
 For the non-negotiable constraints of this demo (simulation-only, deny-by-default, quarantine rules), see DOCS/INTENT.md.
+
+Enforcement lives in the **tripwire** (`kingpin_demo/proxy.py`), **tests**, and the **CI audit** (GitHub Actions).
+
 ---
 
 ## Safety & side-effects (read this once)
@@ -147,3 +150,5 @@ If you think this is naive, show a better mechanism — with the same constraint
 
 - License: PolyForm Noncommercial 1.0.0 (no commercial use).
 - Intent: See `DOCS/INTENT.md` (constraints and anti-misread guardrails).
+- Threat model: See `DOCS/THREAT_MODEL.md` (toy scope).
+- Security policy: See `SECURITY.md` (simulation-only).
