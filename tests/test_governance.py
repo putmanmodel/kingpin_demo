@@ -1,9 +1,10 @@
 import time
 
+import pytest
+
 from kingpin_demo.issuer import Issuer
 from kingpin_demo.memory import GuardedMemory
 from kingpin_demo.proxy import ToolProxy
-
 
 NET = "NET:https://example.com"
 WRITE = "FILE_WRITE:/tmp/demo.txt"
@@ -12,7 +13,10 @@ WRITE = "FILE_WRITE:/tmp/demo.txt"
 def test_expired_token_denies():
     issuer = Issuer(secret="s")
     proxy = ToolProxy(issuer)
-    token = issuer.mint_lease(scopes=[NET], ttl_seconds=-1, nonce="expired")
+
+    past = int(time.time()) - 120
+    token = issuer.mint_lease(scopes=[NET], ttl_seconds=60, nonce="expired", now=past)
+
     decision = proxy.enforce(NET, token)
     assert decision.allowed is False
     assert "expired" in decision.reason
@@ -64,37 +68,48 @@ def test_quarantined_event_goes_to_quarantine_not_policy():
     assert gm.quarantine == ["this contains SECRET: value"]
     assert gm.policy_memory == []
 
+
+def test_memory_rejects_non_string_event():
+    gm = GuardedMemory()
+    with pytest.raises(TypeError):
+        gm.ingest({"not": "a string"})  # type: ignore[arg-type]
+
+
+def test_memory_truncates_very_large_event():
+    gm = GuardedMemory(max_event_chars=50)
+    big = "A" * 10_000
+    route = gm.ingest(big)
+    assert route == "policy"
+    assert gm.policy_memory, "expected policy_memory to have the ingested event"
+    stored = gm.policy_memory[0]
+    assert len(stored) <= 50 + len("…[truncated]")
+    assert stored.endswith("…[truncated]")
+
+
 def test_tripwire_raises_if_env_set(monkeypatch):
     from kingpin_demo.proxy import tripwire_if_real_execution_attempted
 
     monkeypatch.setenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION", "1")
-    import pytest
-
     with pytest.raises(RuntimeError):
         tripwire_if_real_execution_attempted()
+
 
 def test_cli_triggers_tripwire_on_allow(monkeypatch):
     """
     Ensure the CLI path calls the simulation-only tripwire when an action is ALLOWED.
     This prevents silently removing the enforcement in the CLI output layer.
     """
+    import argparse
     import json
-    import pytest
 
-    from kingpin_demo.issuer import Issuer
     from kingpin_demo.cli import cmd_act
 
-    # Create a valid NET lease
     issuer = Issuer(secret="demo-secret")
-    net = "NET:https://example.com"
-    token = issuer.mint_lease(scopes=[net], ttl_seconds=120, nonce="tripwire-test")
+    token = issuer.mint_lease(scopes=[NET], ttl_seconds=120, nonce="tripwire-test")
 
-    # Set env var that should cause the tripwire to raise on ALLOW
     monkeypatch.setenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION", "1")
 
-    import argparse
-
-    args = argparse.Namespace(action=net, token=json.dumps(token), secret="demo-secret")
+    args = argparse.Namespace(action=NET, token=json.dumps(token), secret="demo-secret")
 
     with pytest.raises(RuntimeError) as excinfo:
         cmd_act(args)
