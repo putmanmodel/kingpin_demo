@@ -72,3 +72,31 @@ def test_tripwire_raises_if_env_set(monkeypatch):
 
     with pytest.raises(RuntimeError):
         tripwire_if_real_execution_attempted()
+
+def test_cli_triggers_tripwire_on_allow(monkeypatch):
+    """
+    Ensure the CLI path calls the simulation-only tripwire when an action is ALLOWED.
+    This prevents silently removing the enforcement in the CLI output layer.
+    """
+    import json
+    import pytest
+
+    from kingpin_demo.issuer import Issuer
+    from kingpin_demo.cli import cmd_act
+
+    # Create a valid NET lease
+    issuer = Issuer(secret="demo-secret")
+    net = "NET:https://example.com"
+    token = issuer.mint_lease(scopes=[net], ttl_seconds=120, nonce="tripwire-test")
+
+    # Set env var that should cause the tripwire to raise on ALLOW
+    monkeypatch.setenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION", "1")
+
+    import argparse
+
+    args = argparse.Namespace(action=net, token=json.dumps(token), secret="demo-secret")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        cmd_act(args)
+
+    assert "SIMULATION ONLY" in str(excinfo.value)
