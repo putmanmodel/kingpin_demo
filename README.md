@@ -33,7 +33,7 @@ This is meant to make mitigation mechanisms discussable in concrete terms — no
 This is a toy governance model meant for safety discussion and capability de-escalation.
 Do not use it to build surveillance, coercion, weaponization, or systems that remove user autonomy.
 If you adapt this for real tool execution, you assume full responsibility for safety, auditing, and legal compliance.
-
+For the non-negotiable constraints of this demo (simulation-only, deny-by-default, quarantine rules), see DOCS/INTENT.md.
 ---
 
 ## Safety & side-effects (read this once)
