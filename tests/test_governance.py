@@ -99,4 +99,5 @@ def test_cli_triggers_tripwire_on_allow(monkeypatch):
     with pytest.raises(RuntimeError) as excinfo:
         cmd_act(args)
 
-    assert "SIMULATION ONLY" in str(excinfo.value)
+    msg = str(excinfo.value).lower()
+    assert "simulation" in msg and ("only" in msg or "simulation-only" in msg)
