@@ -18,9 +18,10 @@ def tripwire_if_real_execution_attempted() -> None:
     """
     if os.getenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION") == "1":
         raise RuntimeError(
-            "Tripwire: this repo is SIMULATION ONLY. "
-            "Remove/modify the tripwire intentionally if you are converting it to real execution, "
-            "and take full responsibility for safety, auditing, and compliance."
+            "Tripwire: simulation-only demo. Refusing to proceed.\n"
+            "You set KINGPIN_DEMO_ALLOW_REAL_EXECUTION=1.\n"
+            "If you are converting this into a real executor, you must deliberately remove/modify "
+            "this tripwire and assume full responsibility for safety, auditing, and compliance."
         )
 
 
