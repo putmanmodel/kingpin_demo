@@ -56,6 +56,8 @@ class ToolProxy:
             return Decision(False, f"invalid lease: {verify.reason}")
 
         payload = verify.payload or {}
+        if not isinstance(payload, dict):
+            return Decision(False, "invalid lease payload type")
         now = int(time.time())
 
         if int(payload["expires_at"]) < now:
