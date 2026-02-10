@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
@@ -18,12 +19,67 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "${{ matrix.python-version }}"
 
       - name: Install package + dev deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
+
+      - name: Audit (ban execution/network primitives)
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+          import io
+          import re
+          import sys
+          import tokenize
+          from pathlib import Path
+
+          ROOT = Path("kingpin_demo")
+
+          # Banlist: keep it short + obvious. (This is a toy demo; we want "no real tool execution" primitives.)
+          BANNED = [
+              r"\bimport\s+requests\b",
+              r"\bimport\s+subprocess\b",
+              r"\burllib\b",
+              r"\bsocket\b",
+              r"http\.client",
+              r"os\.system\s*\(",
+              r"subprocess\.",
+              r"\bopen\s*\(",
+          ]
+          BANNED_RE = [re.compile(p) for p in BANNED]
+
+          def strip_strings_and_comments(code: str) -> str:
+              out = []
+              tokens = tokenize.generate_tokens(io.StringIO(code).readline)
+              for tok_type, tok_str, *_ in tokens:
+                  if tok_type in (tokenize.STRING, tokenize.COMMENT):
+                      out.append(" ")
+                  else:
+                      out.append(tok_str)
+              return "".join(out)
+
+          hits: list[tuple[str, str]] = []
+
+          for path in ROOT.rglob("*.py"):
+              code = path.read_text(encoding="utf-8", errors="replace")
+              scan = strip_strings_and_comments(code)
+              for rex in BANNED_RE:
+                  if rex.search(scan):
+                      hits.append((str(path), rex.pattern))
+
+          if hits:
+              print("BANNED PRIMITIVES DETECTED (code-level):")
+              for f, pat in hits:
+                  print(f" - {f}: matched {pat}")
+              sys.exit(1)
+
+              # If you *ever* intentionally allow one, remove it from BANNED and justify it in DOCS/THREAT_MODEL.md.
+
+          print("Audit OK: no banned execution/network primitives found.")
+          PY
 
       - name: Run tests
         run: |
