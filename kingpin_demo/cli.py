@@ -8,7 +8,7 @@ from typing import Any
 
 from .issuer import Issuer
 from .memory import GuardedMemory
-from .proxy import DANGER_ACTIONS, ToolProxy
+from .proxy import DANGER_ACTIONS, ToolProxy, tripwire_if_real_execution_attempted
 
 
 def _parse_token(raw: str) -> dict[str, Any]:
@@ -25,6 +25,7 @@ def _print_action_result(action: str, decision_allowed: bool, reason: str) -> No
     status = "ALLOW" if decision_allowed else "DENY"
     print(f"{status} action={action} reason={reason}")
     if decision_allowed:
+        tripwire_if_real_execution_attempted()
         print(f"SIMULATED_EXECUTION action={action} (no external side effects)")
 
 

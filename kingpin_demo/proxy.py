@@ -2,11 +2,26 @@
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
 from typing import Any
 
 from .issuer import Issuer
+
+
+def tripwire_if_real_execution_attempted() -> None:
+    """Tripwire to keep this repo simulation-only.
+
+    Activates ONLY if:
+      KINGPIN_DEMO_ALLOW_REAL_EXECUTION=1
+    """
+    if os.getenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION") == "1":
+        raise RuntimeError(
+            "Tripwire: this repo is SIMULATION ONLY. "
+            "Remove/modify the tripwire intentionally if you are converting it to real execution, "
+            "and take full responsibility for safety, auditing, and compliance."
+        )
 
 
 DANGER_ACTIONS = {
@@ -41,6 +56,7 @@ class ToolProxy:
 
         payload = verify.payload or {}
         now = int(time.time())
+
         if int(payload["expires_at"]) < now:
             return Decision(False, "lease expired")
 
@@ -56,3 +72,6 @@ class ToolProxy:
             return Decision(False, "scope does not allow action")
 
         return Decision(True, "lease valid and scope allows action")
+
+
+__all__ = ["ToolProxy", "Decision", "DANGER_ACTIONS", "tripwire_if_real_execution_attempted"]
