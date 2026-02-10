@@ -63,3 +63,12 @@ def test_quarantined_event_goes_to_quarantine_not_policy():
     assert route == "quarantine"
     assert gm.quarantine == ["this contains SECRET: value"]
     assert gm.policy_memory == []
+
+def test_tripwire_raises_if_env_set(monkeypatch):
+    from kingpin_demo.proxy import tripwire_if_real_execution_attempted
+
+    monkeypatch.setenv("KINGPIN_DEMO_ALLOW_REAL_EXECUTION", "1")
+    import pytest
+
+    with pytest.raises(RuntimeError):
+        tripwire_if_real_execution_attempted()
