@@ -1,5 +1,7 @@
 # kingpin-demo
 
+![Kingpin demo overview](assets/kingpin_flowchart.png)
+
 A toy Python CLI governance demo that models:
 
 - **Capability leases** (short-lived, scoped tokens) enforced by a **ToolProxy**
